@@ -12,11 +12,7 @@
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *     * Neither the name of 6WIND S.A. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *       the documentation and/or other materials provided with the *       distribution.  *     * Neither the name of 6WIND S.A. nor the names of its *       contributors may be used to endorse or promote products derived *       from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  *   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -297,6 +293,13 @@ enum rte_flow_item_type {
 	 * See struct rte_flow_item_gre.
 	 */
 	RTE_FLOW_ITEM_TYPE_GRE,
+
+	/**
+	 * Matches a PPPOE header.
+	 *
+	 * See struct rte_flow_item_pppoe.
+	 */
+	RTE_FLOW_ITEM_TYPE_PPPOE,
 };
 
 /**
@@ -699,6 +702,18 @@ static const struct rte_flow_item_gre rte_flow_item_gre_mask = {
 	.protocol = 0xffff,
 };
 #endif
+
+/**
+ * RTE_FLOW_ITEM_TYPE_PPPOE.
+ *
+ * Matches a PPPOE Header.
+ */
+struct rte_flow_item_pppoe {
+	uint8_t version_type;
+	uint8_t code;
+	uint16_t session;
+	uint16_t length;
+};
 
 /**
  * Matching pattern item definition.

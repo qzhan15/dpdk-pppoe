@@ -970,6 +970,7 @@ static const struct {
 	MK_FLOW_ITEM(VXLAN, sizeof(struct rte_flow_item_vxlan)),
 	MK_FLOW_ITEM(MPLS, sizeof(struct rte_flow_item_mpls)),
 	MK_FLOW_ITEM(GRE, sizeof(struct rte_flow_item_gre)),
+	MK_FLOW_ITEM(PPPOE, sizeof(struct rte_flow_item_pppoe)),
 };
 
 /** Compute storage space needed by item specification. */

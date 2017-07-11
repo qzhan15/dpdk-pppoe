@@ -167,6 +167,12 @@ enum index {
 	ITEM_MPLS_LABEL,
 	ITEM_GRE,
 	ITEM_GRE_PROTO,
+	ITEM_PPPOE,
+	ITEM_PPPOE_VERSION,
+	ITEM_PPPOE_TYPE,
+	ITEM_PPPOE_CODE,
+	ITEM_PPPOE_SESSION,
+	ITEM_PPPOE_LENGTH,
 
 	/* Validate/create actions. */
 	ACTIONS,
@@ -444,6 +450,7 @@ static const enum index next_item[] = {
 	ITEM_NVGRE,
 	ITEM_MPLS,
 	ITEM_GRE,
+	ITEM_PPPOE,
 	ZERO,
 };
 
@@ -570,6 +577,16 @@ static const enum index item_mpls[] = {
 
 static const enum index item_gre[] = {
 	ITEM_GRE_PROTO,
+	ITEM_NEXT,
+	ZERO,
+};
+
+static const enum index item_pppoe[] = {
+	ITEM_PPPOE_VERSION,
+	ITEM_PPPOE_TYPE,
+	ITEM_PPPOE_CODE,
+	ITEM_PPPOE_SESSION,
+	ITEM_PPPOE_LENGTH,
 	ITEM_NEXT,
 	ZERO,
 };
@@ -1372,6 +1389,42 @@ static const struct token token_list[] = {
 		.args = ARGS(ARGS_ENTRY_HTON(struct rte_flow_item_gre,
 					     protocol)),
 	},
+	[ITEM_PPPOE] = {
+		.name = "pppoe",
+		.help = "match PPPOE header",
+		.priv = PRIV_ITEM(PPPOE, sizeof(struct rte_flow_item_pppoe)),
+		.next = NEXT(item_pppoe),
+		.call = parse_vc,
+	},
+	[ITEM_PPPOE_VERSION] = {
+		.name = "version and type",
+		.help = "PPPOE version and type",
+		.next = NEXT(item_pppoe, NEXT_ENTRY(UNSIGNED), item_param),
+		.args = ARGS(ARGS_ENTRY_HTON(struct rte_flow_item_pppoe,
+						version_type)),
+	},
+	[ITEM_PPPOE_CODE] = {
+		.name = "code",
+		.help = "PPPOE code",
+		.next = NEXT(item_pppoe, NEXT_ENTRY(UNSIGNED), item_param),
+		.args = ARGS(ARGS_ENTRY_HTON(struct rte_flow_item_pppoe,
+						code)),
+	},
+	[ITEM_PPPOE_SESSION] = {
+		.name = "session",
+		.help = "PPPOE session",
+		.next = NEXT(item_pppoe, NEXT_ENTRY(UNSIGNED), item_param),
+		.args = ARGS(ARGS_ENTRY_HTON(struct rte_flow_item_pppoe,
+						session)),
+	},
+	[ITEM_PPPOE_LENGTH] = {
+		.name = "length",
+		.help = "PPPOE length",
+		.next = NEXT(item_pppoe, NEXT_ENTRY(UNSIGNED), item_param),
+		.args = ARGS(ARGS_ENTRY_HTON(struct rte_flow_item_pppoe,
+						length)),
+	},
+
 	/* Validate/create actions. */
 	[ACTIONS] = {
 		.name = "actions",
