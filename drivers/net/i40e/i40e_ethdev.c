@@ -7045,6 +7045,19 @@ i40e_status_code i40e_replace_mpls_cloud_filter(struct i40e_pf *pf)
 	return status;
 }
 
+#error "TODO: implement the replace funciton"
+#if 0
+static enum
+i40e_status_code i40e_replace_pppoe_l1_filter(struct i40e_pf *pf)
+{
+}
+
+static enum
+i40e_status_code i40e_replace_pppoe_cloud_filter(struct i40e_pf *pf)
+{
+}
+#endif
+
 int
 i40e_dev_consistent_tunnel_filter_set(struct i40e_pf *pf,
 		      struct i40e_tunnel_filter_conf *tunnel_filter,
@@ -7145,6 +7158,26 @@ i40e_dev_consistent_tunnel_filter_set(struct i40e_pf *pf,
 		big_buffer = 1;
 		tun_type = I40E_AQC_ADD_CLOUD_TNL_TYPE_MPLSoGRE;
 		break;
+	case I40E_TUNNEL_TYPE_PPPOE:
+#error "TODO: implement the PPPOE branch"
+#if 0
+		if (!pf->pppoe_replace_flag) {
+			i40e_replace_pppoe_l1_filter(pf);
+			i40e_replace_pppoe_cloud_filter(pf);
+			pf->pppoe_replace_flag = 1;
+		}
+		teid_le = rte_cpu_to_le_32(tunnel_filter->tenant_id);
+		pfilter->general_fields[I40E_AQC_ADD_CLOUD_FV_FLU_0X11_WORD0] =
+			teid_le >> 4;
+		pfilter->general_fields[I40E_AQC_ADD_CLOUD_FV_FLU_0X11_WORD1] =
+			(teid_le & 0xF) << 12;
+		pfilter->general_fields[I40E_AQC_ADD_CLOUD_FV_FLU_0X11_WORD2] =
+			0x40;
+		big_buffer = 1;
+		tun_type = I40E_AQC_ADD_CLOUD_TNL_TYPE_MPLSoUDP;
+#endif
+		break;
+
 	case I40E_TUNNEL_TYPE_QINQ:
 		if (!pf->qinq_replace_flag) {
 			ret = i40e_cloud_filter_qinq_create(pf);
@@ -7178,6 +7211,9 @@ i40e_dev_consistent_tunnel_filter_set(struct i40e_pf *pf,
 	else if (tunnel_filter->tunnel_type == I40E_TUNNEL_TYPE_QINQ)
 		pfilter->element.flags |=
 			I40E_AQC_ADD_CLOUD_FILTER_CUSTOM_QINQ;
+	else if (tunnel_filter->tunnel_type == I40E_TUNNEL_TYPE_PPPOE)
+		pfilter->element.flags |=
+			I40E_AQC_ADD_CLOUD_FILTER_TEID_PPPOE;
 	else {
 		val = i40e_dev_get_filter_type(tunnel_filter->filter_type,
 						&pfilter->element.flags);
@@ -10689,6 +10725,9 @@ i40e_tunnel_filter_restore(struct i40e_pf *pf)
 		    ((f->input.flags &
 		     I40E_AQC_ADD_CLOUD_FILTER_TEID_MPLSoGRE) ==
 		     I40E_AQC_ADD_CLOUD_FILTER_TEID_MPLSoGRE) ||
+		    ((f->input.flags &
+		     I40E_AQC_ADD_CLOUD_FILTER_TEID_PPPOE) ==
+		     I40E_AQC_ADD_CLOUD_FILTER_TEID_PPPOE) ||
 		    ((f->input.flags &
 		     I40E_AQC_ADD_CLOUD_FILTER_CUSTOM_QINQ) ==
 		     I40E_AQC_ADD_CLOUD_FILTER_CUSTOM_QINQ))

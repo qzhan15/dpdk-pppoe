@@ -139,6 +139,13 @@ i40e_flow_parse_qinq_pattern(__rte_unused struct rte_eth_dev *dev,
 			      const struct rte_flow_item *pattern,
 			      struct rte_flow_error *error,
 			      struct i40e_tunnel_filter_conf *filter);
+static int
+i40e_flow_parse_pppoe_filter(struct rte_eth_dev *dev,
+			     const struct rte_flow_attr *attr,
+			     const struct rte_flow_item pattern[],
+			     const struct rte_flow_action actions[],
+			     struct rte_flow_error *error,
+			     union i40e_filter_t *filter);
 
 const struct rte_flow_ops i40e_flow_ops = {
 	.validate = i40e_flow_validate,
@@ -337,6 +344,13 @@ static enum rte_flow_item_type pattern_qinq_1[] = {
 	RTE_FLOW_ITEM_TYPE_END,
 };
 
+/* Pattern matched PPPOE */
+static enum rte_flow_item_type pattern_pppoe_1[] = {
+	RTE_FLOW_ITEM_TYPE_ETH,
+	RTE_FLOW_ITEM_TYPE_PPPOE,
+	RTE_FLOW_ITEM_TYPE_END,
+};
+
 static struct i40e_valid_pattern i40e_supported_patterns[] = {
 	/* Ethertype */
 	{ pattern_ethertype, i40e_flow_parse_ethertype_filter },
@@ -369,6 +383,8 @@ static struct i40e_valid_pattern i40e_supported_patterns[] = {
 	{ pattern_mpls_4, i40e_flow_parse_mpls_filter },
 	/* QINQ */
 	{ pattern_qinq_1, i40e_flow_parse_qinq_filter },
+	/* PPPOE */
+	{ pattern_pppoe_1, i40e_flow_parse_pppoe_filter },
 };
 
 #define NEXT_ITEM_OF_ACTION(act, actions, index)                        \
@@ -1718,6 +1734,62 @@ i40e_flow_parse_mpls_pattern(__rte_unused struct rte_eth_dev *dev,
 }
 
 static int
+i40e_flow_parse_pppoe_pattern(__rte_unused struct rte_eth_dev *dev,
+			      const struct rte_flow_item *pattern,
+			      struct rte_flow_error *error,
+			      struct i40e_tunnel_filter_conf *filter)
+{
+	const struct rte_flow_item *item = pattern;
+	const struct rte_flow_item_pppoe *pppoe_spec;
+	const struct rte_flow_item_pppoe *pppoe_mask;
+	enum rte_flow_item_type item_type;
+
+	for (; item->type != RTE_FLOW_ITEM_TYPE_END; item++) {
+		if (item->last) {
+			rte_flow_error_set(error, EINVAL,
+					   RTE_FLOW_ERROR_TYPE_ITEM,
+					   item,
+					   "Not support range");
+			return -rte_errno;
+		}
+		item_type = item->type;
+		switch (item_type) {
+		case RTE_FLOW_ITEM_TYPE_ETH:
+			if (item->spec || item->mask) {
+				rte_flow_error_set(error, EINVAL,
+						   RTE_FLOW_ERROR_TYPE_ITEM,
+						   item,
+						   "Invalid ETH item");
+				return -rte_errno;
+			}
+			break;
+		case RTE_FLOW_ITEM_TYPE_PPPOE:
+			pppoe_spec =
+				(const struct rte_flow_item_pppoe *)item->spec;
+			pppoe_mask =
+				(const struct rte_flow_item_pppoe *)item->mask;
+
+			if (!pppoe_spec || !pppoe_mask) {
+				rte_flow_error_set(error, EINVAL,
+						   RTE_FLOW_ERROR_TYPE_ITEM,
+						   item,
+						   "Invalid MPLS item");
+				return -rte_errno;
+			}
+
+			filter->tenant_id = pppoe_spec->session;
+			break;
+		default:
+			break;
+		}
+	}
+
+	filter->tunnel_type = I40E_TUNNEL_TYPE_PPPOE;
+
+	return 0;
+}
+
+static int
 i40e_flow_parse_mpls_filter(struct rte_eth_dev *dev,
 			    const struct rte_flow_attr *attr,
 			    const struct rte_flow_item pattern[],
@@ -1731,6 +1803,36 @@ i40e_flow_parse_mpls_filter(struct rte_eth_dev *dev,
 
 	ret = i40e_flow_parse_mpls_pattern(dev, pattern,
 					   error, tunnel_filter);
+	if (ret)
+		return ret;
+
+	ret = i40e_flow_parse_tunnel_action(dev, actions, error, tunnel_filter);
+	if (ret)
+		return ret;
+
+	ret = i40e_flow_parse_attr(attr, error);
+	if (ret)
+		return ret;
+
+	cons_filter_type = RTE_ETH_FILTER_TUNNEL;
+
+	return ret;
+}
+
+static int
+i40e_flow_parse_pppoe_filter(struct rte_eth_dev *dev,
+			     const struct rte_flow_attr *attr,
+			     const struct rte_flow_item pattern[],
+			     const struct rte_flow_action actions[],
+			     struct rte_flow_error *error,
+			     union i40e_filter_t *filter)
+{
+	struct i40e_tunnel_filter_conf *tunnel_filter =
+		&filter->consistent_tunnel_filter;
+	int ret;
+
+	ret = i40e_flow_parse_pppoe_pattern(dev, pattern,
+					    error, tunnel_filter);
 	if (ret)
 		return ret;
 
